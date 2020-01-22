@@ -1,0 +1,4 @@
+useDynLib(scaleBVS, .registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+import(RcppEigen)
+importFrom(Rcpp, evalCpp)

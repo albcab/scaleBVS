@@ -6,7 +6,14 @@ output:
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
 
 # [scaleBVS](https://github.com/albcab/scaleBVS)
 
@@ -32,8 +39,7 @@ binary inclusion variables and provide a formal Bayesian answer to variable sele
 ## Installation
 
 Install scaleBVS from [Github](https://github.com/albcab/scaleBVS) with:
-
-```r
+```{r, eval = FALSE}
 install.packages("devtools")
 devtools::install_github("albcab/scaleBVS")
 ```
@@ -73,8 +79,7 @@ computes the matrix of samples and weights given the output of `samplingBVS`.
 Since the model does not include an intercept on the regessors, it is recommended 
 to standardize both the dependent and independent variables to a zero mean.
 
-
-```r
+```{r}
 #Standardizing
 X <- t(t(mtcars[,-1]) - colMeans(mtcars[,-1]))
 y <- mtcars$mpg - mean(mtcars$mpg)
@@ -85,18 +90,10 @@ mtcars.output <- scaleBVS::samplingBVS(y, X)
 #POSTERIOR INCLUSION PROBABILITIES
 names(mtcars.output$PIP) <- names(mtcars[,-1])
 print(mtcars.output$PIP)
-#>       cyl      disp        hp      drat        wt      qsec        vs 
-#> 0.3272143 0.1501944 0.3695996 0.1452414 0.9367263 0.3788146 0.1335889 
-#>        am      gear      carb 
-#> 0.2632201 0.1394057 0.1948337
 
 #SAMPLES
 mtcars.samples <- createSamples(mtcars.output$states)
 head(mtcars.samples$samples, 3)
-#>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-#> [1,]    0    0    0    0    0    1    0    1    0     0
-#> [2,]    0    0    0    0    0    0    0    1    0     0
-#> [3,]    0    0    0    0    0    1    0    1    0     0
 ```
 
 ## Benchmarks
@@ -107,8 +104,7 @@ simulated data. The simulated dataset has a very large amount of uncorrelated
 regressors where only the first 10 are strongly correlated with the
 response variable.
 
-
-```r
+```{r} 
 #Setting up the number of observations, paramters and samples
 n <- 10000
 p <- 10000
@@ -128,15 +124,9 @@ microbenchmark::microbenchmark(
   scaleBVS = scaleBVS::samplingBVS(y, X, n_iter = n_iter, burn_in = burnin),
   times = 10
 )
-#> Unit: seconds
-#>      expr     min       lq     mean  median       uq      max neval
-#>  scaleBVS 48.9666 54.93314 58.30909 58.1386 62.65196 68.37025    10
 
 #RESULTS CHECK
 head(scaleBVS::samplingBVS(y, X, n_iter = n_iter, burn_in = burnin)$PIP, 11)
-#>  [1] 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00
-#>  [6] 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00
-#> [11] 1.150147e-05
 ```
 
 The previous example is run on a Windows server 64-bit operating system with 

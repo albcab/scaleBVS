@@ -1,0 +1,16 @@
+Package: scaleBVS
+Type: Package
+Title: weighted Tempered Gibbs Sampling for Bayesian Variable Selection
+Version: 1.0
+Date: 2020-01-15
+Authors@R: c(
+    person("Giacomo", "Zanella", email = "zanella.gcm@gmail.com", role = "aut"),
+    person("Alberto", "Cabezas Gonzalez", email = "alb.cab94@gmail.com", role = c("aut", "cre")))
+Maintainer: Alberto Cabezas Gonzalez <alb.cab94@gmail.com>
+Description: Performs Bayesian variable selection in linear regression contexts using discrete spike and slab priors. 
+        Posterior sampling and calculation of marginal Posterior Inclusion Probabilities (PIPs) 
+        for a explanatory variables is done using the weighted Tempered Gibbs Sampling algorithm of Zanella and Roberts (2019).
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.1), RcppEigen (>= 0.3.3.5.0)
+LinkingTo: Rcpp, RcppEigen
+RoxygenNote: 6.1.1
