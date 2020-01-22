@@ -92,7 +92,7 @@ names(mtcars.output$PIP) <- names(mtcars[,-1])
 print(mtcars.output$PIP)
 
 #SAMPLES
-mtcars.samples <- createSamples(mtcars.output$states)
+mtcars.samples <- scaleBVS::createSamples(mtcars.output$states)
 head(mtcars.samples$samples, 3)
 ```
 
