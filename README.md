@@ -5,24 +5,26 @@
 
 Bayesian Variable Selection models provide a natural and coherent
 framework to select a subset of explanatory variables in linear
-regression contexts. The binary inclusion variables for each regressor
-typically possess pairwise and/or negative dependence structures
-conjectured to be conductive to successful application of weighted
-Tempered Gibbs Sampling (Zanella and Roberts, 2019).
-
-The use of weighted Tempered Gibbs Sampling overcomes the challenges of
-high-dimensional Bayesian Variable selection models by an efficient
-computation of the full conditional distribution of the binary inclusion
-probabilities. These full conditionals allow for the calculation of
-Rao-Blackwellised estimators of the marginal Posterior Inclusion
-Probabilities for each regressor. These estimates quantify the
-uncertainties of the true underlying linear model.
+regression contexts (Chipman, George and McCulloch, 2001). The binary
+inclusion variables for each regressor typically possess pairwise and/or
+negative dependence structures conjectured to be conductive to
+successful application of weighted Tempered Gibbs Sampling (Zanella and
+Roberts, 2019).
 
 This package has been concieved as an implementation of the weighted
-Tempered Gibbs Sampling algorithm of Zanella and Roberts (2019) to
-Bayesian Variable Selection models in order to sample from the
-distribution of its binary inclusion variables and provide a formal
-Bayesian answer to variable selection problems.
+Tempered Gibbs Sampling algorithm of Zanella and Roberts (2019) for
+Bayesian Variable Selection in linear models. The algorithm returns
+weighted samples from the posterior distribution of binary inclusion
+variables, thus allowing for fully Bayesian posterior inferences.
+
+The weighted Tempered Gibbs Sampling is applicable to high-dimensional
+Bayesian Variable selection models thanks to its favorable mixing
+properties and to an efficient computation of the full conditional
+distribution of the binary inclusion probabilities. These full
+conditionals allow for the calculation of Rao-Blackwellised estimators
+of the marginal Posterior Inclusion Probabilities for each regressor,
+which are useful in quantifying the uncertainties of the true underlying
+linear model.
 
 ## Installation
 
@@ -44,27 +46,22 @@ inclusion variables
 for the linear model with p regressors and n
 observations:
 
-<img src="https://render.githubusercontent.com/render/math?math=\mathbf{Y}|\beta_{\gamma},\gamma,\sigma^2 \sim N(X_{\gamma}\beta_{\gamma},\sigma I_n)">
+<img src="https://render.githubusercontent.com/render/math?math=\mathbf{Y}|\beta_{\gamma},\gamma,\sigma^2 \sim N(X_{\gamma}\beta_{\gamma},\sigma^2 I_n)">
 
 <img src="https://render.githubusercontent.com/render/math?math=\beta_{\gamma}|\gamma,\sigma^2 \sim N(0,c(X_{\gamma}^TX_{\gamma})^{-1})">
+
+<img src="https://render.githubusercontent.com/render/math?math=p(\sigma^2) \propto \frac{1}{\sigma^2}">
 
 <img src="https://render.githubusercontent.com/render/math?math=\gamma_i|h \overset{iid}{\sim} Bernoulli(h)">
 
 where
-<img src="https://render.githubusercontent.com/render/math?math=c > 0">
-and
-<img src="https://render.githubusercontent.com/render/math?math=\sigma^2">
-is given a noninformative prior. The variable
+<img src="https://render.githubusercontent.com/render/math?math=c > 0">.
+The variable
 <img src="https://render.githubusercontent.com/render/math?math=h"> can
 be either set to a fixed value between 0 and 1 or given a Beta prior
 distribution with two fixed hyperparameters, both greater than 0.
 
-The algorithm has a uniform and a weighted version. The latter allows
-for a tradeoff between exploration, forces sampler to explore new
-regions, and exploitation, sampler focuses on most important regions, of
-the state space.
-
-Finally, in the case that
+In the case that
 <img src="https://render.githubusercontent.com/render/math?math=X_{\gamma}^TX_{\gamma}">
 is singular, the Moore-Penrose inverse (pseudo or generalized inverse)
 of the matrix is used.
@@ -76,8 +73,8 @@ to Zanella and Roberts (2019).
 
 scaleBVS contains one main function `samplingBVS()` used to calculate
 Posterior Inclusion Probabilities for any set of p regressors. The
-function `createSamples` computes the matrix of samples and weights
-given the output of `samplingBVS`. Since the model does not include an
+function `createSamples()` computes the matrix of samples and weights
+given the output of `samplingBVS()`. Since the model does not include an
 intercept on the regessors, it is recommended to standardize both the
 dependent and independent variables to a zero mean.
 
@@ -93,29 +90,29 @@ mtcars.output <- scaleBVS::samplingBVS(y, X)
 names(mtcars.output$PIP) <- names(mtcars[,-1])
 print(mtcars.output$PIP)
 #>       cyl      disp        hp      drat        wt      qsec        vs 
-#> 0.3723372 0.1544439 0.3671071 0.1446202 0.9224017 0.3535772 0.1336101 
+#> 0.3441948 0.1546459 0.3589170 0.1503041 0.9324322 0.3829592 0.1384492 
 #>        am      gear      carb 
-#> 0.2595719 0.1402785 0.2077849
+#> 0.2574685 0.1462154 0.2104974
 
 #SAMPLES
 mtcars.samples <- scaleBVS::createSamples(mtcars.output$states)
 head(mtcars.samples$samples, 3)
 #>      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
-#> [1,]    0    0    0    1    1    0    0    0    0     0
-#> [2,]    0    0    0    1    0    0    0    0    0     0
-#> [3,]    0    0    0    1    1    0    0    0    0     0
+#> [1,]    0    1    0    0    0    1    0    0    0     0
+#> [2,]    0    1    0    0    1    1    0    0    0     0
+#> [3,]    0    1    0    0    0    1    0    0    0     0
 ```
 
 ## Benchmarks
 
 scaleBVS is very fast and can easily handle high-dimensional problems.
 We showcase these characteristics through an illustration using
-simulated data. The simulated dataset has a very large amount of
-uncorrelated regressors where only the first 10 are strongly correlated
-with the response variable.
+simulated data. The simulated dataset has p=10000 regressors, simulated
+assuming an uncorrelated design, where only the first 10 are included in
+the true data generating model.
 
 ``` r
-#Setting up the number of observations, paramters and samples
+#Setting up the number of observations, parameters and samples
 n <- 10000
 p <- 10000
 n_iter <- 1000
@@ -124,7 +121,7 @@ burnin <- 200
 #Creating the data
 X <- matrix(rnorm(n*p), nrow = n, ncol = p)
 beta0 <- matrix(c(2,-3,2,2,-3,3,-2,3,-2,3, rep(0, p-10)), ncol = 1)
-beta <- 2*sqrt(log(p)/n)*beta0
+beta <- sqrt(log(p)/n)*beta0
 y <- X %*% beta + rnorm(n, mean = 0, sd = 1)
 X <- t(t(X) - colMeans(X))
 y <- y - mean(y)
@@ -135,14 +132,14 @@ microbenchmark::microbenchmark(
   times = 10
 )
 #> Unit: seconds
-#>      expr      min       lq     mean   median       uq      max neval
-#>  scaleBVS 3.680549 4.404221 5.074466 4.569247 5.132157 9.638155    10
+#>      expr      min       lq    mean   median       uq      max neval
+#>  scaleBVS 3.937769 4.520557 4.97726 4.627177 4.965776 8.240404    10
 
 #RESULTS CHECK
 head(scaleBVS::samplingBVS(y, X, n_iter = n_iter, burn_in = burnin)$PIP, 11)
-#>  [1] 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00
-#>  [6] 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00 1.000000e+00
-#> [11] 2.254658e-05
+#>  [1] 6.737042e-01 1.000000e+00 7.792444e-03 9.994240e-01 1.000000e+00
+#>  [6] 1.000000e+00 9.999022e-01 1.000000e+00 9.990178e-01 1.000000e+00
+#> [11] 1.022808e-05
 ```
 
 The previous example is run on a Windows server 64-bit operating system
@@ -151,6 +148,9 @@ easily handle even larger problems.
 
 ## References
 
+  - Chipman, H. A., George, E. I. and McCulloch, R. E. (2001). The
+    Practical Implementation of Bayesian Model Selection, pp. 65–116.
+    Beachwood: Institute of Mathematical Statistics.
   - Zanella, G. and Roberts, G. (2019). Scalable importance tempering
     and Bayesian variable selection. Journal of the Royal Statistical
     Society: Series B (Statistical Methodology): 489–517. Crossref. Web.
