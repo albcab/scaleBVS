@@ -68,7 +68,10 @@
 #' "sample_weights" - a vector (n_iterx1) of weights for \eqn{\gamma} at each step of 
 #' the Markov Chain.\cr
 #' "indices_sequence" - a vector (n_iterx1) of indices ranging \eqn{1,...,p} indicating the
-#' element of \eqn{\gamma} flipped at each step of the Markov Chain.}
+#' element of \eqn{\gamma} flipped at each step of the Markov Chain.}\cr
+#' "y" - input independent variables.\cr
+#' "X" - input dependent variables.\cr
+#' "c" - constant of proportionality of the prior covariance matrix.
 #'  
 #' @export
 #' 
@@ -139,5 +142,8 @@ samplingBVS <- function(y, #vector of observations
   return(list(PIP = output[[1]],
               states = list(start = output[[2]],
                             sample_weights = output[[3]],
-                            indices_sequence = output[[4]])))
+                            indices_sequence = output[[4]]),
+              y = y,
+              X = X,
+              c = c))
 }

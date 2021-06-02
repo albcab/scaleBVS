@@ -11,6 +11,6 @@ Description: Performs Bayesian variable selection in linear regression contexts 
         Posterior sampling and calculation of marginal Posterior Inclusion Probabilities (PIPs) 
         for a explanatory variables is done using the weighted Tempered Gibbs Sampling algorithm of Zanella and Roberts (2019).
 License: GPL (>= 2)
-Imports: Rcpp (>= 1.0.1), RcppEigen (>= 0.3.3.5.0)
+Imports: Rcpp (>= 1.0.1), RcppEigen (>= 0.3.3.5.0), MASS
 LinkingTo: Rcpp, RcppEigen
 RoxygenNote: 6.1.1
