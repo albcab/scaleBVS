@@ -68,20 +68,24 @@ createSamples <- function(samples, #list outputted from the main function
   Xty <- c( t(X) %*% y )
   c <- samples$c
   for (t in 1:n_iter) {
-    
+    print(t)
     gamma[samples$indices_sequence[t]] <- 1 - gamma[samples$indices_sequence[t]]
     gamma_ <- as.logical(gamma)
-    inv <- solve(XtX[gamma_, gamma_])
-    b_hat <- c( inv %*% Xty[gamma_] )
-    s2 <- c( t(y - X[, gamma_] %*% b_hat) %*% (y - X[, gamma_] %*% b_hat) )
-    sigma2 <- 1. / rgamma(1, n/2., s2/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma_] ))
-    beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv)
+    if (sum(gamma_) > 0) {
+      inv <- solve(XtX[gamma_, gamma_])
+      b_hat <- c( inv %*% Xty[gamma_] )
+      err <- y - X[, gamma_, drop=FALSE] %*% b_hat
+      sigma2 <- 1. / rgamma(1, n/2., c( t(err) %*% err )/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma_] ))
+      beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv)
+    } 
+    else 
+      beta <- c()
     
     if (t %% thin == 0) {
       states[(t/thin),] <- gamma
       weights[t/thin] <- samples$sample_weights[t]
       beta_ <- rep(0, p)
-      beta_[gamma] <- beta
+      beta_[gamma_] <- beta
       betas[(t/thin),] <- beta_
     }
   }
