@@ -446,7 +446,7 @@ double Gamma::calculateWeight()
     sumweight += z;
 
     // double runif = ((RAND_MAX - rand())/static_cast<double>(RAND_MAX))*sum_flip-1e-6;
-    double runif = R::runif(0, 1)*sum_flip
+    double runif = R::runif(0, 1) * sum_flip;
     j = 0;
     while (runif > 0)
     {
