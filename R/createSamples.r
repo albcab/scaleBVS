@@ -45,14 +45,11 @@ createSamples <- function(samples, #list outputted from the main function
   if (thin < 1) stop("thin must be an integer greater than or equal to 1")
   
   check <- names(samples)
-  if (!all(check %in% c("start", "sample_weights", "indices_sequence")))
-	if (!all(check %in% c("PIP", "states")))
-	  stop("samples must be from the output of main sampling function (samplingBVS).")
-	else {
-    X <- samples$X
-    y <- samples$y
-    c <- samples$c
-    samples <- samples$states
+  if (!all(check %in% c("start", "sample_weights", "indices_sequence", "y", "X", "c"))) {
+	  if (!all(check %in% c("PIP", "states")))
+	    stop("samples must be from the output of main sampling function (samplingBVS).")
+	  else
+	    samples <- samples$states
   }
   
   n_iter <- length(samples$indices_sequence)
@@ -64,10 +61,12 @@ createSamples <- function(samples, #list outputted from the main function
   betas <- matrix(NA, ncol = p, nrow = n_iter%/%thin)
   
   gamma <- samples$start
+  X <- samples$X
   XtX <- t(X) %*% X
+  y <- samples$y
   n <- length(y)
   Xty <- c( t(X) %*% y )
-  
+  c <- samples$c
   for (t in 1:n_iter) {
     
     gamma[samples$indices_sequence[t]] <- 1 - gamma[samples$indices_sequence[t]]
