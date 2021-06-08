@@ -142,8 +142,8 @@ samplingBVS <- function(y, #vector of observations
   return(list(PIP = output[[1]],
               states = list(start = output[[2]],
                             sample_weights = output[[3]],
-                            indices_sequence = output[[4]],
-                            y = as.vector(y),
-                            X = as.matrix(X),
-                            c = c)))
+                            indices_sequence = output[[4]]),
+              y = as.vector(y),
+              X = as.matrix(X),
+              c = c))
 }
