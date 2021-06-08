@@ -70,10 +70,11 @@ createSamples <- function(samples, #list outputted from the main function
   for (t in 1:n_iter) {
     
     gamma[samples$indices_sequence[t]] <- 1 - gamma[samples$indices_sequence[t]]
-    inv <- solve(XtX[gamma, gamma])
-    b_hat <- c( inv %*% Xty[gamma] )
+    gamma_ <- as.logical(gamma)
+    inv <- solve(XtX[gamma_, gamma_])
+    b_hat <- c( inv %*% Xty[gamma_] )
     s2 <- c( t(y - X %*% b_hat) %*% (y - X %*% b_hat) )
-    sigma2 <- 1. / rgamma(1, n/2., s2/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma] ))
+    sigma2 <- 1. / rgamma(1, n/2., s2/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma_] ))
     beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv)
     
     if (t %% thin == 0) {
