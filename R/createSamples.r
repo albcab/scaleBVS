@@ -68,7 +68,6 @@ createSamples <- function(samples, #list outputted from the main function
   Xty <- c( t(X) %*% y )
   c <- samples$c
   for (t in 1:n_iter) {
-    print(t)
     gamma[samples$indices_sequence[t]] <- 1 - gamma[samples$indices_sequence[t]]
     gamma_ <- as.logical(gamma)
     if (sum(gamma_) > 0) {
