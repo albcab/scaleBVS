@@ -73,7 +73,7 @@ createSamples <- function(samples, #list outputted from the main function
     gamma_ <- as.logical(gamma)
     inv <- solve(XtX[gamma_, gamma_])
     b_hat <- c( inv %*% Xty[gamma_] )
-    s2 <- c( t(y - X[gamma_] %*% b_hat) %*% (y - X[gamma_] %*% b_hat) )
+    s2 <- c( t(y - X[, gamma_] %*% b_hat) %*% (y - X[, gamma_] %*% b_hat) )
     sigma2 <- 1. / rgamma(1, n/2., s2/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma_] ))
     beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv)
     
