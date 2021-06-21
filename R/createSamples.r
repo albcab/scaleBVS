@@ -40,7 +40,8 @@
 #' #Samples
 #' head(mtcars.samples$samples)
 createSamples <- function(samples, #list outputted from the main function
-						              thin = 1) { #Thinning of the samples
+						              rank_updates = TRUE, #perform rank updates on XtX inverses for efficiency
+                          thin = 1) { #Thinning of the samples
   
   if (thin < 1) stop("thin must be an integer greater than or equal to 1")
   
@@ -63,19 +64,46 @@ createSamples <- function(samples, #list outputted from the main function
   gamma <- samples$start
   X <- samples$X
   XtX <- t(X) %*% X
+  if (rank_updates) {
+    gamma_ <- as.logical(gamma)
+    inv <- solve(XtX[gamma_, gamma_])
+    which_j <- which(gamma_)
+  }
   y <- samples$y
   n <- length(y)
   Xty <- c( t(X) %*% y )
   c <- samples$c
   for (t in 1:n_iter) {
-    gamma[samples$indices_sequence[t]] <- 1 - gamma[samples$indices_sequence[t]]
+
+    j <- samples$indices_sequence[t]
+    gamma[j] <- 1 - gamma[j]
     gamma_ <- as.logical(gamma)
+
     if (sum(gamma_) > 0) {
-      inv <- solve(XtX[gamma_, gamma_])
-      b_hat <- c( inv %*% Xty[gamma_] )
+
+      if (!rank_updates)
+        inv <- solve(XtX[gamma_, gamma_])
+      else if (sum(gamma_) == 1) {
+        inv <- 1 / XtX[gamma_, gamma_, drop=FALSE]
+        which_j <- which(gamma_)
+      } else { #rank_updates
+        if (gamma[j] == 1) {
+          a <- XtX[which_j, j, drop=FALSE]
+          d <- 1 / c(XtX[j, j] - t(a) %*% inv %*% a)
+          inv <- rbind( cbind(inv + d * inv %*% a %*% t(a) %*% t(inv), -d * inv %*% a), cbind(-d * t(a) %*% t(inv), d) )
+          which_j <- c(which_j, j)
+        } else { # gamma[j] == 0
+          j_ <- which(which_j == j)
+          inv <- inv[-j_, -j_] - inv[-j_, j_] %*% t(inv[-j_, j_]) / inv[j_, j_]
+          which_j <- which_j[-j_]
+        }
+      }
+
+      ord <- order(which_j)
+      b_hat <- c( inv[ord, ord] %*% Xty[gamma_] )
       err <- y - X[, gamma_, drop=FALSE] %*% b_hat
       sigma2 <- 1. / rgamma(1, n/2., c( t(err) %*% err )/2. + 1./(2*(c+1)) * c( b_hat %*% Xty[gamma_] ))
-      beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv)
+      beta <- MASS::mvrnorm(1, c/(c+1) * b_hat, sigma2 * c/(c+1) * inv[ord, ord])
     } 
     else 
       beta <- c()
