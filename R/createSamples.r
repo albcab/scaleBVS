@@ -47,7 +47,7 @@ createSamples <- function(samples, #list outputted from the main function
   
   check <- names(samples)
   if (!all(check %in% c("start", "sample_weights", "indices_sequence", "y", "X", "c"))) {
-    if (!all(check %in% c("PIP", "states")))
+    if (!all(check %in% c("PIP", "full_cond", "states")))
       stop("samples must be from the output of main sampling function (samplingBVS).")
     else
       samples <- samples$states
