@@ -130,16 +130,17 @@ samplingBVS <- function(y, #vector of observations
   p <- ncol(X)
   
   if (length(h) == 2) {
-	h1 <- h[1]
-	h2 <- h[2]
+    h1 <- h[1]
+    h2 <- h[2]
   } else {
-	h1 <- h
-	h2 <- 0
+    h1 <- h
+    h2 <- 0
   }
   
   output <- wTGS(as.matrix(X), as.vector(y), n, p, n_iter, burn_in, h1, h2, c, k_weight, weighted)
   
   return(list(PIP = output[[1]],
+              full_cond = output[[5]],
               states = list(start = output[[2]],
                             sample_weights = output[[3]],
                             indices_sequence = output[[4]],

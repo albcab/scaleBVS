@@ -36,12 +36,12 @@ public:
 
     int whichFlip();
 
-	int p, n;
-	float h1, h2, c, k;
-	bool w;
-	//Outside information
+    int p, n;
+    float h1, h2, c, k;
+    bool w;
+    //Outside information
 
-	int *gamma;
+    int *gamma;
 //private:
     vector<int> included;
     int gamma_size;
@@ -94,70 +94,75 @@ public:
 // [[Rcpp::export]]
 List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1_, SEXP h2_, SEXP c_, SEXP k_, SEXP weighted)
 {
-	typedef Map<MatrixXd> matrix;
-	typedef Map<VectorXd> vector;
-	
-	const matrix X(as<matrix>(X_));
-	const vector y(as<vector>(y_));
-	const int n(as<int>(n_));
-	const int p(as<int>(p_));
-	const int burnin(as<int>(burnin_));
-	const int n_it(as<int>(n_iter));
-	const float h1(as<float>(h1_));
-	const float h2(as<float>(h2_));
-	const float c(as<float>(c_));
-	const float k(as<float>(k_));
-	const bool w(as<bool>(weighted));
-	
-	NumericVector PIP(p);
-	NumericVector start(p);
-	NumericVector sample_weights(n_it);
-	NumericVector indices_sequence(n_it);
-	
-	Gamma main(X, y, n, p, h1, h2, c, k, w);
-	
-	//cout << "Start wTGS..." << endl;
-	for (int i = 1; i <= n_it+burnin; i++)
-	{
-		//if (i < burnin)
-			//cout << "\r\t(Burn in) Iteration " << i;
-		//else 
-		if (i == burnin)
-		{
-			//cout << "\r\t(Burn in) Iteration " << i << endl;
-			for (int j = 0; j < p; j++)
-				start[j] = main.gamma[j];
-		}
-		//else
-			//cout << "\r\tIteration " << i-burnin;
-		
-		if (main.gamma[main.j] == 0)
-			main.updateAdd();
-		else
-			main.updateSub();
-		main.calculateH();
-		main.calculateFullCond();
-		main.calculateFlipRates();
-		double z = main.calculateWeight();
-		main.updatePIP(z);
-		
-		if (i > burnin)
-		{
-			sample_weights[i-burnin-1] = z;
-			indices_sequence[i-burnin-1] = main.j+1;
-		}
-	}
-	
-	//cout << endl << "DONE" << endl;
-	for (int i = 0; i < p; i++)
-		PIP[i] = main.PIP[i]/main.sumweight;
-	
-	List output(4);
-	output[0] = PIP;
-	output[1] = start;
-	output[2] = sample_weights/main.sumweight;
-	output[3] = indices_sequence;
-	return output;
+    typedef Map<MatrixXd> matrix;
+    typedef Map<VectorXd> vector;
+    
+    const matrix X(as<matrix>(X_));
+    const vector y(as<vector>(y_));
+    const int n(as<int>(n_));
+    const int p(as<int>(p_));
+    const int burnin(as<int>(burnin_));
+    const int n_it(as<int>(n_iter));
+    const float h1(as<float>(h1_));
+    const float h2(as<float>(h2_));
+    const float c(as<float>(c_));
+    const float k(as<float>(k_));
+    const bool w(as<bool>(weighted));
+    
+    NumericVector PIP(p);
+    NumericVector start(p);
+    NumericVector sample_weights(n_it);
+    NumericVector indices_sequence(n_it);
+    NumericMatrix full_cond(n_it, p);
+    
+    Gamma main(X, y, n, p, h1, h2, c, k, w);
+    
+    //cout << "Start wTGS..." << endl;
+    for (int i = 1; i <= n_it+burnin; i++)
+    {
+        //if (i < burnin)
+            //cout << "\r\t(Burn in) Iteration " << i;
+        //else 
+        if (i == burnin)
+        {
+            //cout << "\r\t(Burn in) Iteration " << i << endl;
+            for (int j = 0; j < p; j++)
+                start[j] = main.gamma[j];
+        }
+        //else
+            //cout << "\r\tIteration " << i-burnin;
+        
+        if (main.gamma[main.j] == 0)
+            main.updateAdd();
+        else
+            main.updateSub();
+        main.calculateH();
+        main.calculateFullCond();
+        main.calculateFlipRates();
+        double z = main.calculateWeight();
+        // main.updatePIP(z);
+        
+        if (i > burnin)
+        {
+            main.updatePIP(z);
+            sample_weights[i-burnin-1] = z;
+            indices_sequence[i-burnin-1] = main.j+1;
+            for (int j=0; j<p; j++)
+                full_cond(i-burnin-1, j) = main.full_cond[j];
+        }
+    }
+    
+    //cout << endl << "DONE" << endl;
+    for (int i = 0; i < p; i++)
+        PIP[i] = main.PIP[i]/main.sumweight;
+    
+    List output(5);
+    output[0] = PIP;
+    output[1] = start;
+    output[2] = sample_weights/main.sumweight;
+    output[3] = indices_sequence;
+    output[4] = full_cond;
+    return output;
 }
 
 //uses cmath
@@ -197,7 +202,7 @@ Gamma::Gamma(MatrixXd x, VectorXd y, int n, int p, float h1, float h2, float c, 
 
     H = new double[2];
     if (h2 > 1e-6)
-		H[0] = h1/(h2+p-1);
+        H[0] = h1/(h2+p-1);
     else
         H[0] = H[1] = h1/(1-h1);
 
@@ -214,10 +219,12 @@ Gamma::Gamma(MatrixXd x, VectorXd y, int n, int p, float h1, float h2, float c, 
             flip_rates[i] = 1/full_cond[i];
     }
 
+    sumweight = 0;
     PIP = new double[p];
     double z = calculateWeight();
     for (int i = 0; i < p; i++)
-        PIP[i] = z*full_cond[i];
+        PIP[i] = 0;
+        // PIP[i] = z*(1-full_cond[i]);
 
     includedXtX.push_back(j);
     XtX.row(0) = X.col(j).transpose()*X;
@@ -226,7 +233,7 @@ Gamma::Gamma(MatrixXd x, VectorXd y, int n, int p, float h1, float h2, float c, 
 Gamma::~Gamma()
 {
     delete[] gamma;
-	delete[] aFa;
+    delete[] aFa;
     delete[] vFa;
     delete[] H;
     delete[] full_cond;
@@ -288,25 +295,25 @@ void Gamma::updateAdd()
 
         A.conservativeResize(gamma_size, NoChange);
         A.row(gamma_size-1) = XtX.row(j_X);
-		
-		if (gamma_size < n)
-		{
-			VectorXd dF_hat = F_hat/d;
-			F += dF_hat*F_hat.transpose();
-			F.conservativeResize(NoChange, gamma_size);
-			F.col(gamma_size-1) = -dF_hat;
-			F.conservativeResize(gamma_size, NoChange);
-			F.row(gamma_size-1) << -dF_hat.transpose(), 1/d;
-		}
-		else
-		{
-			F.resize(gamma_size, gamma_size);
-			for (int i = 0; i < gamma_size; i++)
-				F.col(i) = A.col(included[i]);
-			// F = F.completeOrthogonalDecomposition().pseudoInverse();
-			JacobiSVD<MatrixXd> svd(F, ComputeThinU | ComputeThinV);
-			F = svd.matrixV()*MatrixXd( (svd.singularValues().diagonal().array().abs() > 1e-6*max(F.cols(), F.rows())*svd.singularValues().array().abs().maxCoeff()).select(svd.singularValues().diagonal().array().inverse(), 0) ).asDiagonal()*svd.matrixU().adjoint();
-		}
+        
+        if (gamma_size < n)
+        {
+            VectorXd dF_hat = F_hat/d;
+            F += dF_hat*F_hat.transpose();
+            F.conservativeResize(NoChange, gamma_size);
+            F.col(gamma_size-1) = -dF_hat;
+            F.conservativeResize(gamma_size, NoChange);
+            F.row(gamma_size-1) << -dF_hat.transpose(), 1/d;
+        }
+        else
+        {
+            F.resize(gamma_size, gamma_size);
+            for (int i = 0; i < gamma_size; i++)
+                F.col(i) = A.col(included[i]);
+            // F = F.completeOrthogonalDecomposition().pseudoInverse();
+            JacobiSVD<MatrixXd> svd(F, ComputeThinU | ComputeThinV);
+            F = svd.matrixV()*MatrixXd( (svd.singularValues().diagonal().array().abs() > 1e-6*max(F.cols(), F.rows())*svd.singularValues().array().abs().maxCoeff()).select(svd.singularValues().diagonal().array().inverse(), 0) ).asDiagonal()*svd.matrixU().adjoint();
+        }
 
         v.conservativeResize(NoChange, gamma_size);
         v(gamma_size-1) = ytX(j);
@@ -357,25 +364,25 @@ void Gamma::updateSub()
 
         A.block(j_new, 0, gamma_size-j_new, p) = A.block(j_new+1, 0, gamma_size-j_new, p);
         A.conservativeResize(gamma_size, p);
-		
-		if (gamma_size < n)
-		{
-			F.block(j_new, 0, gamma_size-j_new, gamma_size+1) = F.block(j_new+1, 0, gamma_size-j_new, gamma_size+1);
-			F.conservativeResize(gamma_size, NoChange);
-			VectorXd F_col = F.col(j_new);
-			F.block(0, j_new, gamma_size, gamma_size-j_new) = F.block(0, j_new+1, gamma_size, gamma_size-j_new);
-			F.conservativeResize(NoChange, gamma_size);
-			F -= F_col*F_col.transpose()/f;
-		}
-		else
-		{
-			F.resize(gamma_size, gamma_size);
-			for (int i = 0; i < gamma_size; i++)
-				F.col(i) = A.col(included[i]);
-			// F = F.completeOrthogonalDecomposition().pseudoInverse();
-			JacobiSVD<MatrixXd> svd(F, ComputeThinU | ComputeThinV);
-			F = svd.matrixV()*MatrixXd( (svd.singularValues().diagonal().array().abs() > 1e-6*max(F.cols(), F.rows())*svd.singularValues().array().abs().maxCoeff()).select(svd.singularValues().diagonal().array().inverse(), 0) ).asDiagonal()*svd.matrixU().adjoint();
-		}
+        
+        if (gamma_size < n)
+        {
+            F.block(j_new, 0, gamma_size-j_new, gamma_size+1) = F.block(j_new+1, 0, gamma_size-j_new, gamma_size+1);
+            F.conservativeResize(gamma_size, NoChange);
+            VectorXd F_col = F.col(j_new);
+            F.block(0, j_new, gamma_size, gamma_size-j_new) = F.block(0, j_new+1, gamma_size, gamma_size-j_new);
+            F.conservativeResize(NoChange, gamma_size);
+            F -= F_col*F_col.transpose()/f;
+        }
+        else
+        {
+            F.resize(gamma_size, gamma_size);
+            for (int i = 0; i < gamma_size; i++)
+                F.col(i) = A.col(included[i]);
+            // F = F.completeOrthogonalDecomposition().pseudoInverse();
+            JacobiSVD<MatrixXd> svd(F, ComputeThinU | ComputeThinV);
+            F = svd.matrixV()*MatrixXd( (svd.singularValues().diagonal().array().abs() > 1e-6*max(F.cols(), F.rows())*svd.singularValues().array().abs().maxCoeff()).select(svd.singularValues().diagonal().array().inverse(), 0) ).asDiagonal()*svd.matrixU().adjoint();
+        }
 
         v.segment(j_new, gamma_size-j_new) = v.segment(j_new+1, gamma_size-j_new);
         v.conservativeResize(NoChange, gamma_size);
@@ -388,7 +395,7 @@ void Gamma::calculateH()
     if (h2 > 1e-6)
     {
         H[0] = (h1+gamma_size)/(h2+p-gamma_size-1);
-        H[1] = (h1+gamma_size-1)/(h1+p-gamma_size);
+        H[1] = (h1+gamma_size-1)/(h2+p-gamma_size);
     }
 }
 
@@ -443,7 +450,6 @@ double Gamma::calculateWeight()
     double z;
     double sum_flip = accumulate(flip_rates, flip_rates+p, 0.0);
     z = p/(2*sum_flip);
-    sumweight += z;
 
     // double runif = ((RAND_MAX - rand())/static_cast<double>(RAND_MAX))*sum_flip-1e-6;
     double runif = R::runif(0, 1) * sum_flip;
@@ -452,7 +458,7 @@ double Gamma::calculateWeight()
     {
         runif -= flip_rates[j];
         if (runif > 0)
-			j++;
+            j++;
     }
     //which variable to flip
 
@@ -461,6 +467,7 @@ double Gamma::calculateWeight()
 
 void Gamma::updatePIP(double z)
 {
+    sumweight += z;
     for (int i = 0; i < p; i++)
     {
         PIP[i] += z*(gamma[i]*full_cond[i] + (1-gamma[i])*(1-full_cond[i]));
