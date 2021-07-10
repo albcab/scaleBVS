@@ -113,7 +113,11 @@ List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1
     NumericVector start(p);
     NumericVector sample_weights(n_it);
     NumericVector indices_sequence(n_it);
-    NumericMatrix full_cond(n_it, p);
+    // NumericMatrix full_cond(n_it, p);
+    // NumericMatrix PIP_check(n_it, p);
+    // NumericVector z_check(n_it);
+    // NumericVector sumweight_check(n_it);
+    // NumericMatrix gamma_check(n_it, p);
     
     Gamma main(X, y, n, p, h1, h2, c, k, w);
     
@@ -123,7 +127,7 @@ List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1
         //if (i < burnin)
             //cout << "\r\t(Burn in) Iteration " << i;
         //else 
-        if (i == burnin)
+        if ((i-1) == burnin)
         {
             //cout << "\r\t(Burn in) Iteration " << i << endl;
             for (int j = 0; j < p; j++)
@@ -139,6 +143,8 @@ List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1
         main.calculateH();
         main.calculateFullCond();
         main.calculateFlipRates();
+        if (i > burnin)
+            indices_sequence[i-burnin-1] = main.j+1;
         double z = main.calculateWeight();
         // main.updatePIP(z);
         
@@ -146,9 +152,14 @@ List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1
         {
             main.updatePIP(z);
             sample_weights[i-burnin-1] = z;
-            indices_sequence[i-burnin-1] = main.j+1;
-            for (int j=0; j<p; j++)
-                full_cond(i-burnin-1, j) = main.full_cond[j];
+            // for (int j=0; j<p; j++)
+            // {
+            //     full_cond(i-burnin-1, j) = main.full_cond[j];
+            //     PIP_check(i-burnin-1, j) = main.PIP[j]/main.sumweight;
+            //     gamma_check(i-burnin-1, j) = main.gamma[j];
+            // }
+            // z_check(i-burnin-1) = z;
+            // sumweight_check(i-burnin-1) = main.sumweight;
         }
     }
     
@@ -156,12 +167,17 @@ List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1
     for (int i = 0; i < p; i++)
         PIP[i] = main.PIP[i]/main.sumweight;
     
-    List output(5);
+    // List output(9);
+    List output(4);
     output[0] = PIP;
     output[1] = start;
     output[2] = sample_weights/main.sumweight;
     output[3] = indices_sequence;
-    output[4] = full_cond;
+    // output[4] = full_cond;
+    // output[5] = PIP_check;
+    // output[6] = z_check;
+    // output[7] = sumweight_check;
+    // output[8] = gamma_check;
     return output;
 }
 
@@ -435,12 +451,12 @@ void Gamma::calculateFlipRates()
         if (w)
         {
             if (gamma[i] == 0)
-                flip_rates[i] = (1-full_cond[i]+k/p)/full_cond[i];
+                flip_rates[i] = (1.0-full_cond[i]+k/p)/full_cond[i];
             else
-                flip_rates[i] = 1 + (k/p)/full_cond[i];
+                flip_rates[i] = 1.0 + (k/p)/full_cond[i];
         }
         else
-            flip_rates[i] = 1/full_cond[i];
+            flip_rates[i] = 1.0/full_cond[i];
     }
 }
 
@@ -470,6 +486,6 @@ void Gamma::updatePIP(double z)
     sumweight += z;
     for (int i = 0; i < p; i++)
     {
-        PIP[i] += z*(gamma[i]*full_cond[i] + (1-gamma[i])*(1-full_cond[i]));
+        PIP[i] += z*(gamma[i]*full_cond[i] + (1.0-gamma[i])*(1.0-full_cond[i]));
     }
 }

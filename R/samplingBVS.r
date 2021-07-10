@@ -140,7 +140,11 @@ samplingBVS <- function(y, #vector of observations
   output <- wTGS(as.matrix(X), as.vector(y), n, p, n_iter, burn_in, h1, h2, c, k_weight, weighted)
   
   return(list(PIP = output[[1]],
-              full_cond = output[[5]],
+              # full_cond = output[[5]],
+              # PIP_check = output[[6]],
+              # z_check = output[[7]],
+              # sumweight_check = output[[8]],
+              # gamma_check = output[[9]],
               states = list(start = output[[2]],
                             sample_weights = output[[3]],
                             indices_sequence = output[[4]],

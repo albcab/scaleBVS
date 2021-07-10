@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // wTGS
 List wTGS(SEXP X_, SEXP y_, SEXP n_, SEXP p_, SEXP n_iter, SEXP burnin_, SEXP h1_, SEXP h2_, SEXP c_, SEXP k_, SEXP weighted);
 RcppExport SEXP _scaleBVS_wTGS(SEXP X_SEXP, SEXP y_SEXP, SEXP n_SEXP, SEXP p_SEXP, SEXP n_iterSEXP, SEXP burnin_SEXP, SEXP h1_SEXP, SEXP h2_SEXP, SEXP c_SEXP, SEXP k_SEXP, SEXP weightedSEXP) {
